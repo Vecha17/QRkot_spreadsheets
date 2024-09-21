@@ -24,10 +24,10 @@ SPREADSHEETS_BODY = dict(
     ))]
 )
 TABLE_VALUES = [
-        ['Отчёт от', 'time'],
-        ['Топ проектов по скорости закрытия'],
-        ['Название проекта', 'Время сбора', 'Описание']
-    ]
+    ['Отчёт от', 'time'],
+    ['Топ проектов по скорости закрытия'],
+    ['Название проекта', 'Время сбора', 'Описание']
+]
 
 
 async def spreadsheets_create(wrapper_services: Aiogoogle) -> tuple[str, str]:
