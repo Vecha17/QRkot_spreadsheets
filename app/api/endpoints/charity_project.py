@@ -1,16 +1,21 @@
 from fastapi import APIRouter, Depends
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from app.api.validators import (check_before_delete, check_before_edit,
-                                check_charity_project_exists,
-                                check_fully_invest, check_name_duplicate)
+from app.api.validators import (
+    check_before_delete, check_before_edit,
+    check_charity_project_exists,
+    check_fully_invest, check_name_duplicate
+)
 from app.core.db import get_async_session
 from app.core.user import current_superuser
 from app.crud.charity_project import charity_project_crud
+from app.crud.donation import donation_crud
 from app.schemas.charity_project import (
-    CharityProjectCreate, CharityProjectDB, CharityProjectUpdate
+    CharityProjectCreate,
+    CharityProjectDB,
+    CharityProjectUpdate
 )
-from app.services.invest import create_charity_project
+from app.services.invest import donation_process
 
 router = APIRouter()
 
@@ -37,12 +42,15 @@ async def create_new_charity_project(
     session: AsyncSession = Depends(get_async_session),
 ):
     await check_name_duplicate(charity_project.name, session)
-    charity_project = await charity_project_crud.create(
-        charity_project, session
+    charity_project_ = await charity_project_crud.create(
+        charity_project, session, commit_flag=False
     )
-    return await create_charity_project(
-        charity_project, session
-    )
+    sources = await donation_crud.get_uninvested(session)
+    new_sources = donation_process(charity_project_, sources)
+    await session.commit()
+    await session.refresh(charity_project_)
+    [await session.refresh(new_source) for new_source in new_sources]
+    return charity_project_
 
 
 @router.patch(
@@ -61,7 +69,7 @@ async def update_charity_project(
     await check_fully_invest(charity_project_id, session)
     if obj_in.name is not None:
         await check_name_duplicate(obj_in.name, session)
-    await check_before_edit(obj_in, charity_project.invested_amount)
+    check_before_edit(obj_in, charity_project.invested_amount)
     return await charity_project_crud.update(
         charity_project, obj_in, session
     )

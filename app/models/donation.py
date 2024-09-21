@@ -1,10 +1,11 @@
 from sqlalchemy import Column, ForeignKey, Integer, Text
 
-from app.core.db import Base
-
-from .base import BaseModel
+from .base import QRKotBaseModel
 
 
-class Donation(Base, BaseModel):
+class Donation(QRKotBaseModel):
     user_id = Column(Integer, ForeignKey('user.id'))
     comment = Column(Text)
+
+    def __repr__(self) -> str:
+        return super().__repr__()

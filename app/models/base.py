@@ -1,11 +1,21 @@
 from datetime import datetime
 
-from sqlalchemy import Boolean, Column, DateTime, Integer
+from sqlalchemy import Boolean, CheckConstraint, Column, DateTime, Integer
+
+from app.core.db import Base
 
 
-class BaseModel():
-    full_amount = Column(Integer)
-    invested_amount = Column(Integer, default=0)
+class QRKotBaseModel(Base):
+    __abstract__ = True
+    full_amount = Column(Integer, CheckConstraint('full_amount > 0'))
+    invested_amount = Column(
+        Integer,
+        CheckConstraint('invested_amount <= full_amount'),
+        default=0
+    )
     fully_invested = Column(Boolean, default=False)
     create_date = Column(DateTime, default=datetime.now)
     close_date = Column(DateTime, default=None)
+
+    def __repr__(self) -> str:
+        return self.__class__.__name__

@@ -3,7 +3,10 @@ from typing import Optional
 
 from pydantic import BaseModel, Extra, Field, PositiveInt, validator
 
-from app.core.conts import GREAT_THEN, MAX_LENGTH, MIN_LENGTH
+from app.core.conts import (
+    CONST_FOR_FULL_AMOUNT_FIELD_GREATE_THEN,
+    NAME_MAX_LENGTH, NAME_MIN_LENGTH
+)
 
 
 class CharityProjectBase(BaseModel):
@@ -13,9 +16,13 @@ class CharityProjectBase(BaseModel):
 
 
 class CharityProjectCreate(CharityProjectBase):
-    name: str = Field(..., min_length=MIN_LENGTH, max_length=MAX_LENGTH)
+    name: str = Field(
+        ...,
+        min_length=NAME_MIN_LENGTH,
+        max_length=NAME_MAX_LENGTH
+    )
     description: str
-    full_amount: int = Field(..., gt=GREAT_THEN)
+    full_amount: int = Field(..., gt=CONST_FOR_FULL_AMOUNT_FIELD_GREATE_THEN)
 
     @validator('name')
     def validate_name(cls, value):

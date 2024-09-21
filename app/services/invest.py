@@ -1,134 +1,30 @@
 from datetime import datetime
 
-from sqlalchemy import select
-from sqlalchemy.ext.asyncio import AsyncSession
-
-from app.models import CharityProject, Donation
+from app.models.base import QRKotBaseModel
 
 
-async def add_object_in_session(obj, session):
-    session.add(obj)
-    await session.commit()
-    await session.refresh(obj)
-
-
-async def confirm_fully_invested(obj):
-    setattr(
-        obj,
-        'fully_invested',
-        True
-    )
-    setattr(
-        obj,
-        'close_date',
-        datetime.now()
-    )
-    setattr(
-        obj,
-        'invested_amount',
-        obj.full_amount
-    )
-    return obj
-
-
-async def get_free_money(
-        full_amount,
-        session: AsyncSession,
+def donation_process(
+        target: QRKotBaseModel,
+        sources: list[QRKotBaseModel]
 ):
-    free_money = 0
-    donation_obj = await session.execute(
-        select(Donation).where(Donation.fully_invested == bool(False))
-    )
-    donation_obj = donation_obj.scalars().all()
-    if donation_obj is not None:
-        for donation in donation_obj:
-            donat_full_amount = donation.full_amount
-            donat_invested_amount = donation.invested_amount
-            free_money += (
-                donat_full_amount - donat_invested_amount
-            )
-            if free_money > full_amount:
-                invested_amount = (
-                    donat_full_amount -
-                    (free_money - full_amount)
-                )
-                free_money = full_amount
-                setattr(donation, 'invested_amount', invested_amount)
-                break
-            else:
-                donation = await confirm_fully_invested(donation)
-    return free_money
-
-
-async def create_charity_project(
-        charity_project,
-        session: AsyncSession,
-):
-    full_amount = charity_project.full_amount
-    free_money = await get_free_money(
-        full_amount,
-        session
-    )
-
-    if free_money == full_amount:
-        charity_project = await confirm_fully_invested(charity_project)
-    setattr(
-        charity_project,
-        'invested_amount',
-        free_money
-    )
-    await add_object_in_session(
-        charity_project, session
-    )
-    return charity_project
-
-
-async def create_donation(
-        donation,
-        session: AsyncSession,
-):
-    charity_projects = await session.execute(
-        select(CharityProject).where(
-            CharityProject.fully_invested == bool(False)
+    new_sources = []
+    datetime_now = datetime.now()
+    target_amount = target.full_amount - target.invested_amount
+    for source in sources:
+        if target_amount <= 0:
+            break
+        transfer_money = min(
+            target_amount,
+            source.full_amount - source.invested_amount
         )
-    )
-    charity_projects = charity_projects.scalars().all()
-    if charity_projects is not None:
-        donation_invested_amount = 0
-        free_money = donation.full_amount
-        for charity_project in charity_projects:
-            charity_project_full_amount = charity_project.full_amount
-            charity_project_invested_amount = charity_project.invested_amount
-            amount = (
-                charity_project_full_amount -
-                charity_project_invested_amount
-            )
-            if free_money > amount:
-                donation_invested_amount = (
-                    donation_invested_amount +
-                    free_money - (free_money - amount)
-                )
-                charity_project = await confirm_fully_invested(charity_project)
-                setattr(
-                    donation,
-                    'invested_amount',
-                    donation_invested_amount
-                )
-                free_money -= amount
-            elif free_money == amount:
-                charity_project = await confirm_fully_invested(charity_project)
-                donation = await confirm_fully_invested(donation)
-                break
-            else:
-                charity_project_invested_amount = (
-                    free_money + charity_project_invested_amount
-                )
-                setattr(
-                    charity_project,
-                    'invested_amount',
-                    charity_project_invested_amount
-                )
-                donation = await confirm_fully_invested(donation)
-                break
-    await add_object_in_session(donation, session)
-    return donation
+        target.invested_amount += transfer_money
+        source.invested_amount += transfer_money
+        target_amount -= transfer_money
+        if source.invested_amount == source.full_amount:
+            source.fully_invested = True
+            source.close_date = datetime_now
+            new_sources.append(source)
+        if target.invested_amount == target.full_amount:
+            target.fully_invested = True
+            target.close_date = datetime_now
+    return new_sources

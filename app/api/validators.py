@@ -43,7 +43,7 @@ async def check_fully_invest(
     charity_project = await charity_project_crud.get(
         charity_project_id, session
     )
-    if charity_project.fully_invested is True:
+    if charity_project.fully_invested:
         raise HTTPException(
             status_code=HTTPStatus.BAD_REQUEST,
             detail=(
@@ -52,7 +52,7 @@ async def check_fully_invest(
         )
 
 
-async def check_before_edit(
+def check_before_edit(
         obj_in,
         invested_amount
 ) -> None:
