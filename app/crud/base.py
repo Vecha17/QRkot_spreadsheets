@@ -82,7 +82,7 @@ class CRUDBase():
     ):
         db_objs = await session.execute(
             select(self.model).where(
-                not self.model.fully_invested
+                self.model.fully_invested.is_(False)
             )
         )
         return db_objs.scalars().all()
