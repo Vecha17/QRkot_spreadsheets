@@ -1,25 +1,26 @@
+import copy
 from datetime import datetime as dt
 
 from aiogoogle import Aiogoogle
-from dateutil import parser
 
-from app.core import conts
+from app.core import consts
+from app.core.exceptions import TableException
 from app.core.config import settings
 
 FORMAT = '%Y/%m/%d %H:%M:%S'
 
 SPREADSHEETS_BODY = dict(
     properties=dict(
-        title=f'Отчет от {dt.now().strftime(FORMAT)}',
+        title='Отчет от',
         locale='ru_RU',
     ),
     sheets=[dict(properties=dict(
         sheetType='GRID',
-        sheetId=0,
+        sheetId=consts.SHEET_ID,
         title='Лист1',
         gridProperties=dict(
-            rowCount=100,
-            columnCount=3,
+            rowCount=consts.ROW_COUNT,
+            columnCount=consts.COLUMN_COUNT,
         )
     ))]
 )
@@ -31,18 +32,18 @@ TABLE_VALUES = [
 
 
 async def spreadsheets_create(wrapper_services: Aiogoogle) -> tuple[str, str]:
+    now_date_time = str(dt.now().strftime(FORMAT))
     service = await wrapper_services.discover('sheets', 'v4')
-    spreadsheet_body = SPREADSHEETS_BODY
+    spreadsheet_body = copy.deepcopy(SPREADSHEETS_BODY)
+    spreadsheet_body['properties']['title'] = f'Отчёт от {now_date_time}'
     response = await wrapper_services.as_service_account(
         service.spreadsheets.create(json=spreadsheet_body)
     )
-    spreadsheet_id = response['spreadsheetId']
-    spreadsheets_url = response['spreadsheetUrl']
-    return spreadsheet_id, spreadsheets_url
+    return response['spreadsheetId'], response['spreadsheetUrl']
 
 
 async def set_user_permissions(
-        spreadsheetid: str,
+        spreadsheet_id: str,
         wrapper_services: Aiogoogle
 ) -> None:
     permissions_body = {'type': 'user',
@@ -51,7 +52,7 @@ async def set_user_permissions(
     service = await wrapper_services.discover('drive', 'v3')
     await wrapper_services.as_service_account(
         service.permissions.create(
-            fileId=spreadsheetid,
+            fileId=spreadsheet_id,
             json=permissions_body,
             fields="id"
         ))
@@ -69,10 +70,7 @@ async def spreadsheets_update_value(
         *TABLE_VALUES,
         *[list(map(str, (
             project.name,
-            (
-                parser.parse(str(project.close_date)) -
-                parser.parse(str(project.create_date))
-            ),
+            (project.close_date - project.create_date),
             project.description))
         ) for project in charity_projects]
     ]
@@ -80,12 +78,21 @@ async def spreadsheets_update_value(
         'majorDimension': 'ROWS',
         'values': table_values
     }
-    if len(table_values) > conts.ROW_COUNT:
-        raise Exception('Передаваемые данные не помещаются в таблицу!')
+    if len(table_values) > consts.ROW_COUNT:
+        raise TableException(
+            f'Передаваемые данные не помещаются в таблицу! '
+            f'{len(table_values)} > {consts.ROW_COUNT}'
+        )
+    for value in table_values:
+        if len(value) > consts.COLUMN_COUNT:
+            raise TableException(
+                f'Передаваемые данные не помещаются в таблицу! '
+                f'{len(value)} > {consts.COLUMN_COUNT}'
+            )
     await wrapper_services.as_service_account(
         service.spreadsheets.values.update(
             spreadsheetId=spreadsheet_id,
-            range='A1:100',
+            range=f'R0C0:R{consts.ROW_COUNT}C{consts.COLUMN_COUNT}',
             valueInputOption='USER_ENTERED',
             json=update_body
         )

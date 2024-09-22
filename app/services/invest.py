@@ -1,13 +1,13 @@
 from datetime import datetime
 
-from app.models.base import QRKotBaseModel
+from app.models.base import Invest
 
 
 def donation_process(
-        target: QRKotBaseModel,
-        sources: list[QRKotBaseModel]
-):
-    new_sources = []
+        target: Invest,
+        sources: list[Invest]
+) -> list[Invest]:
+    updated_sources = []
     datetime_now = datetime.now()
     target_amount = target.full_amount - target.invested_amount
     for source in sources:
@@ -17,14 +17,11 @@ def donation_process(
             target_amount,
             source.full_amount - source.invested_amount
         )
-        target.invested_amount += transfer_money
-        source.invested_amount += transfer_money
         target_amount -= transfer_money
-        if source.invested_amount == source.full_amount:
-            source.fully_invested = True
-            source.close_date = datetime_now
-            new_sources.append(source)
-        if target.invested_amount == target.full_amount:
-            target.fully_invested = True
-            target.close_date = datetime_now
-    return new_sources
+        for obj in [target, source]:
+            obj.invested_amount += transfer_money
+            if obj.invested_amount == obj.full_amount:
+                obj.fully_invested = True
+                obj.close_date = datetime_now
+        updated_sources.append(source)
+    return updated_sources

@@ -13,7 +13,7 @@ from fastapi_users_db_sqlalchemy import SQLAlchemyUserDatabase
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.core.config import settings
-from app.core.conts import LIFETIME, PASSWORD_LEN
+from app.core.consts import LIFETIME, PASSWORD_LEN
 from app.core.db import get_async_session
 from app.models.user import User
 from app.schemas.user import UserCreate

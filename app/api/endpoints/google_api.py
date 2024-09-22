@@ -28,14 +28,14 @@ async def get_report(
     charity_projects = await charity_project_crud.get_closet_charity_projects(
         session
     )
+    spreadsheet_id, spreadsheet_url = await spreadsheets_create(
+        wrapper_services
+    )
+    await set_user_permissions(spreadsheet_id, wrapper_services)
     try:
-        spreadsheet_id, spreadsheet_url = await spreadsheets_create(
-            wrapper_services
+        await spreadsheets_update_value(
+            spreadsheet_id, charity_projects, wrapper_services
         )
     except Exception as error:
         print(error)
-    await set_user_permissions(spreadsheet_id, wrapper_services)
-    await spreadsheets_update_value(
-        spreadsheet_id, charity_projects, wrapper_services
-    )
     return spreadsheet_url

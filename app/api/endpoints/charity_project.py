@@ -47,9 +47,9 @@ async def create_new_charity_project(
     )
     sources = await donation_crud.get_uninvested(session)
     new_sources = donation_process(charity_project_, sources)
+    [session.add(new_source) for new_source in new_sources]
     await session.commit()
     await session.refresh(charity_project_)
-    [await session.refresh(new_source) for new_source in new_sources]
     return charity_project_
 
 
