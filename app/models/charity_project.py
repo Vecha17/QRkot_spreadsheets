@@ -8,4 +8,4 @@ class CharityProject(Invest):
     description = Column(Text, nullable=False)
 
     def __repr__(self) -> str:
-        return f'{super().__repr__()}, {self.name}, {self.description}'
+        return f'{super().__repr__()}, {self.name=}, {self.description=}'

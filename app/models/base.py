@@ -19,6 +19,6 @@ class Invest(Base):
 
     def __repr__(self) -> str:
         return (
-            f'{self.full_amount=}, {self.invested_amount},'
-            f' {self.fully_invested}, {self.create_date}, {self.close_date}'
+            f'{self.full_amount=}, {self.invested_amount=},'
+            f' {self.fully_invested=}, {self.create_date=}, {self.close_date=}'
         )

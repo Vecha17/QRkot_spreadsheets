@@ -77,21 +77,24 @@ async def spreadsheets_update_value(
         'majorDimension': 'ROWS',
         'values': table_values
     }
-    if len(table_values) > consts.ROW_COUNT:
+    row_len = len(table_values)
+    if row_len > consts.ROW_COUNT:
         raise ValueError(
             f'Передаваемые данные не помещаются в таблицу! '
-            f'{len(table_values)} > {consts.ROW_COUNT}'
+            f'{row_len} > {consts.ROW_COUNT}'
         )
+    column_len = 0
     for value in table_values:
-        if len(value) > consts.COLUMN_COUNT:
-            raise ValueError(
-                f'Передаваемые данные не помещаются в таблицу! '
-                f'{len(value)} > {consts.COLUMN_COUNT}'
-            )
+        column_len = max(len(value), column_len)
+    if column_len > consts.COLUMN_COUNT:
+        raise ValueError(
+            f'Передаваемые данные не помещаются в таблицу! '
+            f'{column_len} > {consts.COLUMN_COUNT}'
+        )
     await wrapper_services.as_service_account(
         service.spreadsheets.values.update(
             spreadsheetId=spreadsheet_id,
-            range=f'R1C1:R{len(table_values)}C{consts.COLUMN_COUNT}',
+            range=f'R1C1:R{row_len}C{column_len}',
             valueInputOption='USER_ENTERED',
             json=update_body
         )
