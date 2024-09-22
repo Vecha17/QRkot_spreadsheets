@@ -36,6 +36,6 @@ async def get_report(
         await spreadsheets_update_value(
             spreadsheet_id, charity_projects, wrapper_services
         )
-    except Exception as error:
-        print(error)
+    except ValueError as error:
+        raise error
     return spreadsheet_url

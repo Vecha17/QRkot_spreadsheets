@@ -4,7 +4,6 @@ from datetime import datetime as dt
 from aiogoogle import Aiogoogle
 
 from app.core import consts
-from app.core.exceptions import TableException
 from app.core.config import settings
 
 FORMAT = '%Y/%m/%d %H:%M:%S'
@@ -32,7 +31,7 @@ TABLE_VALUES = [
 
 
 async def spreadsheets_create(wrapper_services: Aiogoogle) -> tuple[str, str]:
-    now_date_time = str(dt.now().strftime(FORMAT))
+    now_date_time = dt.now().strftime(FORMAT)
     service = await wrapper_services.discover('sheets', 'v4')
     spreadsheet_body = copy.deepcopy(SPREADSHEETS_BODY)
     spreadsheet_body['properties']['title'] = f'Отчёт от {now_date_time}'
@@ -63,11 +62,11 @@ async def spreadsheets_update_value(
         charity_projects: list,
         wrapper_services: Aiogoogle
 ) -> None:
-    now_date_time = str(dt.now().strftime(FORMAT))
-    TABLE_VALUES[0][1] = now_date_time
+    table_values_hat = copy.deepcopy(TABLE_VALUES)
+    table_values_hat[0][1] = str(dt.now().strftime(FORMAT))
     service = await wrapper_services.discover('sheets', 'v4')
     table_values = [
-        *TABLE_VALUES,
+        *table_values_hat,
         *[list(map(str, (
             project.name,
             (project.close_date - project.create_date),
@@ -79,20 +78,20 @@ async def spreadsheets_update_value(
         'values': table_values
     }
     if len(table_values) > consts.ROW_COUNT:
-        raise TableException(
+        raise ValueError(
             f'Передаваемые данные не помещаются в таблицу! '
             f'{len(table_values)} > {consts.ROW_COUNT}'
         )
     for value in table_values:
         if len(value) > consts.COLUMN_COUNT:
-            raise TableException(
+            raise ValueError(
                 f'Передаваемые данные не помещаются в таблицу! '
                 f'{len(value)} > {consts.COLUMN_COUNT}'
             )
     await wrapper_services.as_service_account(
         service.spreadsheets.values.update(
             spreadsheetId=spreadsheet_id,
-            range=f'R0C0:R{consts.ROW_COUNT}C{consts.COLUMN_COUNT}',
+            range=f'R1C1:R{len(table_values)}C{consts.COLUMN_COUNT}',
             valueInputOption='USER_ENTERED',
             json=update_body
         )

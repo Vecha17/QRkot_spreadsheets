@@ -51,7 +51,6 @@ SECRET=secret
 Создать базу данных 
 
 ```
-$ alembic init --template async alembic
 $ alembic upgrade head 
 ```
 
@@ -64,7 +63,7 @@ $ uvicorn app.main:app
 
 Технологии использованные в прокете:
 
-fastapi, sqlalchemy, alembic, googleapi
+python, fastapi, sqlalchemy, alembic, googleapi
 
 ### Автор Попов Алексей Сергеевич
 

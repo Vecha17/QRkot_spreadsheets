@@ -42,15 +42,17 @@ async def create_new_charity_project(
     session: AsyncSession = Depends(get_async_session),
 ):
     await check_name_duplicate(charity_project.name, session)
-    charity_project_ = await charity_project_crud.create(
+    charity_project = await charity_project_crud.create( 
         charity_project, session, commit_flag=False
     )
-    sources = await donation_crud.get_uninvested(session)
-    new_sources = donation_process(charity_project_, sources)
-    [session.add(new_source) for new_source in new_sources]
+    new_sources = donation_process(
+        charity_project,
+        await donation_crud.get_uninvested(session)
+    )
+    session.add_all(new_sources)
     await session.commit()
-    await session.refresh(charity_project_)
-    return charity_project_
+    await session.refresh(charity_project)
+    return charity_project
 
 
 @router.patch(

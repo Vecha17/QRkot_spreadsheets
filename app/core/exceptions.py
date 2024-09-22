@@ -1,2 +1,0 @@
-class TableException(Exception):
-    pass
